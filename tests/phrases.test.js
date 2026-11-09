@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { startRound, dispatch, visibleCandidates, ROUNDS, syllableFor, scoreRound, LEXICON_VERSION } from '../src/ime.js';
+import { PACKED_LEXICON } from '../src/lexicon.js';
 
 function enter(game, pinyin, word, now = 100) {
   for (const value of pinyin) game = dispatch(game, { type: 'letter', value }, now);
@@ -13,8 +14,55 @@ function enter(game, pinyin, word, now = 100) {
   return dispatch(game, { type: 'candidate', index: candidates.items.indexOf(word) }, now);
 }
 
+test('index covers many genuine Rime keys with numeric weights and no bundled legacy corpus', () => {
+  assert.ok(Object.keys(PACKED_LEXICON).length > 150000);
+  assert.match(PACKED_LEXICON.nihao, /你好:\d+/);
+  assert.match(PACKED_LEXICON.shijie, /世界:\d+/);
+  assert.ok(PACKED_LEXICON.shi.split(' ').length > 50);
+  assert.ok(!Object.keys(PACKED_LEXICON).some(key => key.includes(' ')));
+});
+
+test('prefix top 250 matches exhaustive weighted ranking even after heap reaches capacity', () => {
+  const prefix = 's';
+  const exact = (PACKED_LEXICON[prefix] || '').split(' ').filter(Boolean).map(record => ({ word: record.slice(0, record.lastIndexOf(':')), weight: Number(record.slice(record.lastIndexOf(':') + 1)) }));
+  const completions = Object.entries(PACKED_LEXICON).filter(([key]) => key.startsWith(prefix) && key !== prefix)
+    .flatMap(([, raw]) => raw.split(' ').map(record => ({ word: record.slice(0, record.lastIndexOf(':')), weight: Number(record.slice(record.lastIndexOf(':') + 1)) })));
+  const compare = (a, b) => b.weight - a.weight || (a.word < b.word ? -1 : a.word > b.word ? 1 : 0);
+  const unique = new Set();
+  const expected = [...exact.sort(compare), ...completions.sort(compare)].filter(entry => {
+    if (unique.has(entry.word)) return false;
+    unique.add(entry.word);
+    return true;
+  }).slice(0, 250).map(entry => entry.word);
+  let game = startRound('hard');
+  game = dispatch(game, { type: 'letter', value: prefix });
+  const observed = [];
+  while (true) {
+    observed.push(...visibleCandidates(game).items);
+    if (game.page + 1 >= visibleCandidates(game).pages) break;
+    game = dispatch(game, { type: 'page', direction: 1 });
+  }
+  assert.deepEqual(observed, expected.filter(word => [...word].length <= [...ROUNDS.hard.target].length));
+});
+
+
+test('exact candidates rank before prefix completions and numeric frequency breaks ties', () => {
+  let game = startRound('easy');
+  for (const value of 'ni') game = dispatch(game, { type: 'letter', value });
+  const words = [];
+  while (true) {
+    words.push(...visibleCandidates(game).items);
+    if (game.page + 1 >= visibleCandidates(game).pages) break;
+    game = dispatch(game, { type: 'page', direction: 1 });
+  }
+  assert.equal(words[0], '你');
+  assert.ok(words.indexOf('泥') >= 0 && words.indexOf('泥') < words.indexOf('你好'));
+  assert.equal(new Set(words).size, words.length);
+});
+
+
 test('licensed broad index offers whole phrases and nontrivial homophones', () => {
-  assert.match(LEXICON_VERSION, /jieba/);
+  assert.match(LEXICON_VERSION, /^rime-ice\/99662ba01e3affa6a0f009174ca530b887bac3b6\//);
   for (const [pinyin, word] of [['nihao', '你好'], ['shijie', '世界']]) {
     let game = startRound();
     for (const value of pinyin) game = dispatch(game, { type: 'letter', value }, 100);

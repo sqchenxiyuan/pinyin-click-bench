@@ -1,7 +1,7 @@
 import { ROUNDS, PUNCTUATION, LEXICON_VERSION, startRound, dispatch, visibleCandidates, scoreRound } from './ime.js';
 
-const RECORD_KEY = 'ziji-record-v2';
-const RECORD_SCHEMA = `2/${LEXICON_VERSION}/score-v1`;
+const RECORD_KEY = 'ziji-record-v3';
+const RECORD_SCHEMA = `3/${LEXICON_VERSION}/score-v1`;
 
 const levels = Object.keys(ROUNDS);
 const app = document.querySelector('#app');
@@ -112,7 +112,7 @@ function render() {
           <div class="controls"><div class="record">${best ? `◈ 本关最佳 <strong>${best.score}</strong> 分 <span>· ${best.accuracy}% · ${best.seconds.toFixed(1)}s</span>` : '◈ 本关尚无记录 · 首次完成即可保存'}</div><div class="control-buttons">${actionButton('↺ 重新开始', 'restart', '', 'secondary-button')}${finished ? (nextLevel ? actionButton(`下一关 ${ROUNDS[nextLevel].name} →`, 'next', '', 'primary-button') : actionButton('重玩挑战 ↗', 'restart', '', 'primary-button')) : actionButton('结束并交卷 →', 'finish', '', 'primary-button', typedLength !== targetLength || !!round.pinyin)}</div></div>
           ${finished ? `<div class="result-panel" role="status"><div class="result-icon">${metrics.accuracy === 100 ? '✦' : '◇'}</div><div><span class="section-kicker">ROUND COMPLETE</span><h3>${metrics.accuracy === 100 ? '精准命中！' : '已交卷，继续练习。'}</h3><p>${metrics.correct} / ${metrics.total} 字正确 · ${formattedTime(metrics.elapsedMs)} · ${metrics.actions} 次点击 · 得分 <strong>${metrics.score}</strong></p></div></div>` : ''}
         </section>
-        <section class="rules" id="rules"><div class="rules-left"><span class="section-kicker">THE RULES <span>／ 玩法说明</span></span><h2>公平，从每次点击开始。</h2><p>这个实验刻意不提供输入框。无论是人还是视觉智能体，都需要通过可见的按钮完成整句话。</p></div><div class="rules-list"><div><span>01</span><p><strong>只用可见按钮</strong>点 QWERTY 字母；候选字词随无声调拼音前缀出现。词库来自固定版本的 MIT 来源语料，单字有大量同音候选；完整拼音更易缩小范围。每页 5 项，最多展示前 250 项，翻页计点击；不是系统输入法，不支持联想整句。</p></div><div><span>02</span><p><strong>字词一起提交</strong>：输入连续拼音（如 nihao）可选「你好」一键提交两个字；超过目标剩余字数的候选不显示。中文标点直接点按钮；退格优先删除未提交拼音，清空后逐字删除已提交内容。</p></div><div><span>03</span><p><strong>交卷与计分</strong>：完全匹配目标时自动结束；达到目标字数但不完全正确时可点「结束并交卷」。逐位置比较准确率，时间和额外点击会拉低分数。</p></div><div><span>04</span><p><strong>固定版本</strong>：词库 ${safe(LEXICON_VERSION)}、文本与候选排序不随关卡变化；计时从首次有效输入起算。本地最高分独立存储为 v2，不与旧版小词库成绩混算。<a href="./NOTICE.md">词库来源及 MIT 许可</a>。</p></div></div></section>
+        <section class="rules" id="rules"><div class="rules-left"><span class="section-kicker">THE RULES <span>／ 玩法说明</span></span><h2>公平，从每次点击开始。</h2><p>这个实验刻意不提供输入框。无论是人还是视觉智能体，都需要通过可见的按钮完成整句话。</p></div><div class="rules-list"><div><span>01</span><p><strong>只用可见按钮</strong>点 QWERTY 字母；候选字词随无声调拼音前缀出现。词库来自固定版本的雾凇拼音（GPL-3.0-only）精选词条，单字有大量同音候选；完整拼音更易缩小范围。每页 5 项，最多展示前 250 项，翻页计点击；不是系统输入法，不支持联想整句。</p></div><div><span>02</span><p><strong>字词一起提交</strong>：输入连续拼音（如 nihao）可选「你好」一键提交两个字；超过目标剩余字数的候选不显示。中文标点直接点按钮；退格优先删除未提交拼音，清空后逐字删除已提交内容。</p></div><div><span>03</span><p><strong>交卷与计分</strong>：完全匹配目标时自动结束；达到目标字数但不完全正确时可点「结束并交卷」。逐位置比较准确率，时间和额外点击会拉低分数。</p></div><div><span>04</span><p><strong>固定版本</strong>：词库 ${safe(LEXICON_VERSION)}、文本与候选排序不随关卡变化；计时从首次有效输入起算。本地最高分独立存储为 v3，不与旧版词库成绩混算。<a href="./NOTICE.md">词库来源及 GPL-3.0-only 许可</a>。</p></div></div></section>
       </main><footer><span>字击 <span class="footer-spark">✳</span> PINYIN CLICK BENCH</span><span>给眼睛一份试卷，给手指一场挑战。</span><a href="#rules">返回规则 ↑</a></footer>
     </div>`;
 }
