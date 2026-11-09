@@ -27,6 +27,30 @@ test('every Chinese character in every curated round can be reached by a pinyin 
   }
 });
 
+test('a partial pinyin like s or sh shows shi candidates before the syllable is complete', () => {
+  for (const prefix of ['s', 'sh']) {
+    let game = startRound('easy', 0);
+    for (const value of prefix) game = dispatch(game, { type: 'letter', value }, 100);
+    const candidates = visibleCandidates(game);
+    assert.ok(candidates.items.includes('是'), `${prefix} should suggest 是`);
+    assert.ok(candidates.pages > 0, `${prefix} has a candidate page`);
+    game = dispatch(game, { type: 'candidate', index: candidates.items.indexOf('是') }, 200);
+    assert.equal(game.committed, '是');
+    assert.equal(game.pinyin, '');
+  }
+});
+
+test('a partial pinyin remains deterministic and never suggests unrelated syllables', () => {
+  let game = dispatch(startRound('easy', 0), { type: 'letter', value: 'n' }, 100);
+  assert.deepEqual(visibleCandidates(game).items, ['你', '尼', '泥', '拟', '逆']);
+  game = dispatch(startRound('easy', 0), { type: 'letter', value: 's' }, 100);
+  assert.ok(visibleCandidates(game).items.includes('是'));
+  assert.ok(!visibleCandidates(game).items.includes('你'));
+  game = dispatch(startRound('easy', 0), { type: 'letter', value: 'x' }, 100);
+  game = dispatch(game, { type: 'letter', value: 'x' }, 100);
+  assert.deepEqual(visibleCandidates(game), { items: [], page: 0, pages: 0 });
+});
+
 test('neng candidate list does not include characters pronounced geng or leng', () => {
   assert.deepEqual(DICTIONARY.neng, ['能']);
 });

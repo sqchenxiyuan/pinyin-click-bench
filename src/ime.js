@@ -63,7 +63,12 @@ export function startRound(level = 'easy', now = 0) {
 }
 
 export function visibleCandidates(state) {
-  const all = DICTIONARY[state.pinyin] || [];
+  const keys = state.pinyin
+    ? Object.keys(DICTIONARY).filter(key => key.startsWith(state.pinyin))
+    : [];
+  // Prefer an exact syllable when present; otherwise keep the curated order.
+  keys.sort((a, b) => Number(b === state.pinyin) - Number(a === state.pinyin));
+  const all = [...new Set(keys.flatMap(key => DICTIONARY[key]))];
   return { items: all.slice(state.page * PAGE_SIZE, (state.page + 1) * PAGE_SIZE), page: state.page, pages: Math.ceil(all.length / PAGE_SIZE) };
 }
 
